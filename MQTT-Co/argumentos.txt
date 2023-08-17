@@ -1,0 +1,16 @@
+import sys
+
+if len(sys.argv) < 2:
+    print("Uso: python script.py <argumento>")
+else:
+    argumento = sys.argv[1]
+    print("Argumento recebido:", argumento)
+
+
+docker build -t my-python-app .
+
+Assim temos como enviar argumentos na hora de execução do container
+Pergunta: Se eu tenho vários arquivos python no meu container e rodar o container passando 
+argumentos, quais dos arquivos vai receber? Vai ser o arquivo que contém o main?
+docker run my-python-app argumento_qualquer
+
