@@ -10,10 +10,6 @@ if valor_da_variavel:
     print(f'O valor da variável de ambiente é: {valor_da_variavel}')
 else:
     print('A variável de ambiente não está definida.')
-
-while True:
-    print(f'O valor da variável de ambiente é: {valor_da_variavel}')
-    time.sleep(1)
     
 if len(sys.argv) < 2:
     print("Uso: python script.py <argumento>")
