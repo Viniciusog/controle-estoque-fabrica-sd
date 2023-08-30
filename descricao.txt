@@ -1,0 +1,20 @@
+# Mudar política de execução para conseguir executar o activate do venv
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+pip freeze > requirements.txt
+
+# Criar ambiente virtual
+python3 -m venv venv
+
+# Esquerda é a porta no container do docker e direita é a porta no nosso pc mesmo
+# estamos mapeando a porta 80 do container para a nossa porta 80 do pc
+docker run -p 80:80 fastapi-teste
+ou
+docker run -it # para executar o container em modo interativo
+
+# Abrir um terminal dentro do WORKDIR do container definido no Dockerfile
+docker exec -it id_do_container /bin/sh
+
+# Para conseguir passar variável de ambiente, precisa ser assim no dockerfile:
+ENV variavel_legal=valorlegal1
+# Em seguida para executar o docker passando essas variáveis de ambiente
+docker run -it -e variavel_legal=valor_que_voce_quer_para_a_variavel nome_container
