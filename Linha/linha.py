@@ -116,7 +116,6 @@ def incrementar_produtos_prontos_fabrica(my_client):
 def loop_verificar_partes(my_client):
     while True:
         time.sleep(1)
-
         # Se tiver alguma parte sendo 0, então solicita para a fábrica
         for i in range(len(linha.array_partes)):
             if linha.array_partes[i] == 0:
@@ -134,6 +133,8 @@ def solicitar_pecas(my_client):
         print(f"Linha - Solicitação peças. `{msg}` enviada ao tópico`{topic_linha_solicita_partes}`")
     else:
         print(f"Linha - Falha solicitação peças. `{msg}` enviada ao tópico`{topic_linha_solicita_partes}`")
+
+executou_linha_solicita_partes = False
 
 def subscribe(client: mqtt_client):
     def on_message(client, userdata, msg):
@@ -158,9 +159,13 @@ def subscribe(client: mqtt_client):
             array_quantidade_partes = ast.literal_eval(valores_msg[3]) 
 
             if int(n_linha) == numero_linha:
-                print(f"Linha - Partes recebidas `{msg.payload.decode()}` do tópico `{msg.topic}`")
-                linha.add_array_partes(array_quantidade_partes)
-                linha.imprimir()
+                global executou_linha_solicita_partes
+                if executou_linha_solicita_partes == False:     
+                    executou_linha_solicita_partes = True           
+                    print(f"Linha - Partes recebidas `{msg.payload.decode()}` do tópico `{msg.topic}`")
+                    linha.add_array_partes(array_quantidade_partes)
+                    linha.imprimir()
+                    executou_linha_solicita_partes = False
 
     client.subscribe(topic_ordem_producao)
     client.subscribe(topic_linha_solicita_partes)
