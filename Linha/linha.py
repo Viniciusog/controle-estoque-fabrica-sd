@@ -30,8 +30,15 @@ class Linha:
     def decrementar_ordem_producao(self):
         self.ordem_producao = self.ordem_producao - 1
     
+    def incrementar_qtd_produtos_prontos(self):
+        self.qtd_produtos_prontos += 1
+    
     def set_qtd_produtos_prontos(self, qtd_produtos_prontos):
         self.qtd_produtos_prontos = qtd_produtos_prontos
+
+    def decrementar_partes_array(self):
+        for i in range(len(self.array_partes)):
+            self.array_partes[i] -= 1
 
     def imprimir(self):
         print("\n----LINHA----")
@@ -47,7 +54,8 @@ broker = 'broker.emqx.io'
 port = 1883
 
 # Quantidade de produtos para serem feitos
-topic_ordem_producao = "viniciusog-sd-linha-ordem_producao" # para cada produto, vamos usar uma quantidade de partes
+topic_ordem_producao = "viniciusog-sd-ordem-producao" # para cada produto, vamos usar uma quantidade de partes
+topic_produtos_prontos = "viniciusog-sd-fabrica-produtos-prontos"
 
 topic_linha_solicita_partes = "viniciusog-sd-linha-solicitacao-partes"
 
@@ -68,18 +76,42 @@ def connect_mqtt():
     client.connect(broker, port)
     return client
 
-#! arrumar isso aqui para consumir as partes e atualizar a quantidade de produtos feitos
-def fabricar_produtos():
+def possui_partes_suficientes():
+    for i in range(len(linha.array_partes)):
+        if linha.array_partes[i] == 0:
+            return False
+    return True
+
+# ! estamos aqui
+def fabricar_produtos(my_client):
     # * depois temos que fazer um while, enquanto peças for zero, pede para a fábrica mais peças
-    while running:
-        if linha.ordem_producao > 0:
-            print("--Fazendo produto--")
+    while True:
+        if linha.ordem_producao > 0 and possui_partes_suficientes():
+            print("-------------------------------")
+            print("--------Fazendo produto--------")
             time.sleep(1)
             print(f"Ordem de produção atual: {linha.ordem_producao}")
             print("Linha - Produziu 1 produto")
             linha.decrementar_ordem_producao()
             print("Linha - Decrementou qtd da ordem existente")
+            linha.decrementar_partes_array()
+            print("Linha - Decrementou quantidade de partes")
+            linha.incrementar_qtd_produtos_prontos()
+            incrementar_produtos_prontos_fabrica(my_client)
+            print("Linha - Incrementou quantidade de produtos feitos")
             linha.imprimir()
+            print("-------------------------------")
+
+def incrementar_produtos_prontos_fabrica(my_client):
+    msg = f"Incrementar/{numero_linha}"
+    result = my_client.publish(topic_produtos_prontos, msg)
+    # result: [0, 1]
+    status = result[0]
+    if status == 0:
+        print(result.rc)
+        print(f"Linha - Incrementar qtd produtos prontos na fábrica. `{msg}` enviada ao tópico`{topic_linha_solicita_partes}`")
+    else:
+        print(f"Linha - Falha - Incrementar qtd produtos prontos na fábrica. `{msg}` enviada ao tópico`{topic_linha_solicita_partes}`")
 
 def loop_verificar_partes(my_client):
     while True:
@@ -88,45 +120,45 @@ def loop_verificar_partes(my_client):
         # Se tiver alguma parte sendo 0, então solicita para a fábrica
         for i in range(len(linha.array_partes)):
             if linha.array_partes[i] == 0:
-                soliticar_pecas(my_client)
+                solicitar_pecas(my_client)
                 break
            
 
-def soliticar_pecas(my_client):
+def solicitar_pecas(my_client):
     # Passando o número da linha
     msg = f"Linha/{numero_linha}"
     result = my_client.publish(topic_linha_solicita_partes, msg)
     # result: [0, 1]
     status = result[0]
     if status == 0:
-        print(result.rc)
         print(f"Linha - Solicitação peças. `{msg}` enviada ao tópico`{topic_linha_solicita_partes}`")
     else:
         print(f"Linha - Falha solicitação peças. `{msg}` enviada ao tópico`{topic_linha_solicita_partes}`")
-        print(result.rc)
 
 def subscribe(client: mqtt_client):
     def on_message(client, userdata, msg):
 
-        if msg.topic == topic_ordem_producao:
-            print(f"Linha - Ordem de produção recebida `{msg.payload.decode()}` do tópico `{msg.topic}`")
-            linha.add_ordem_producao(int(msg.payload.decode()))
-            linha.imprimir()
+        if msg.topic == topic_ordem_producao and str(msg.payload.decode()).startswith("Fabrica"):
+            # Fabrica/{numero_fabrica}/Linha/{n_produto}/{qtd_produtos}
+            resultados_msg = str(msg.payload.decode()).split('/')
+            n_fabrica = int(resultados_msg[1])
+            n_linha = int(resultados_msg[3])
+            qtd_produtos = int(resultados_msg[4])
+
+            if n_linha == numero_linha:
+                print(f"Linha - Ordem de produção recebida `{msg.payload.decode()}` do tópico `{msg.topic}`")
+                linha.add_ordem_producao(qtd_produtos)
+                linha.imprimir()
 
         # Se partes vieram da fábrica
         elif msg.topic == topic_linha_solicita_partes and not str(msg.payload.decode()).startswith("Linha"):
-            print(f"Linha - Partes recebidas `{msg.payload.decode()}` do tópico `{msg.topic}`")
             # Fabrica/Linha/{numero_linha}/[1,2,3,4,5,10,9,8,7,6]"
             valores_msg = str(msg.payload.decode()).split('/')
             n_linha = valores_msg[2]
             array_quantidade_partes = ast.literal_eval(valores_msg[3]) 
-            
-            """ print("array_quantidade_partes")
-            print(array_quantidade_partes)
-            print(f"n_linha: `{n_linha}`")
-            print(f"numero_linha: `{numero_linha}`") """
 
             if int(n_linha) == numero_linha:
+                print(f"Linha - Partes recebidas `{msg.payload.decode()}` do tópico `{msg.topic}`")
                 linha.add_array_partes(array_quantidade_partes)
                 linha.imprimir()
 
@@ -141,7 +173,7 @@ def run():
 
     client = connect_mqtt()
     subscribe(client)
-    thread_fabricar_produtos = threading.Thread(target=fabricar_produtos)
+    thread_fabricar_produtos = threading.Thread(target=fabricar_produtos, args=(client,))
     thread_loop_verificar_partes = threading.Thread(target=loop_verificar_partes, args=(client,))
     # Inicia a thread
     thread_fabricar_produtos.start()

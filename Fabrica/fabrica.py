@@ -3,6 +3,7 @@ import time
 from paho.mqtt import client as mqtt_client
 import threading
 import ast
+from utilsProdutos import produtos
 
 class Fabrica:
     # dependendo do tamanho do lote, iremos alocar + ou - linhas de producao
@@ -20,13 +21,17 @@ class Fabrica:
         self.ordem_producao = self.ordem_producao + ordem_producao
 
     def decrementar_estoque_partes(self, array_qtd, numero_linha):
-        for i in range(len(self.array_qtd)):
+        for i in range(len(array_qtd)):
             self.estoque_partes[produtos[numero_linha][i]] -= array_qtd[i]
     
     def incrementar_estoque_partes(self, dicionario_qtd_parte):
         print(f"Incrementando estoque de partes na fábrica {numero_fabrica}")
         for key in dicionario_qtd_parte:
             self.estoque_partes[key] += dicionario_qtd_parte[key]
+    
+    def incrementar_estoque_produtos_prontos(self):
+        print(f"Incrementando estoque de produtos prontos na fábrica {numero_fabrica}")
+        self.estoque_produtos_prontos += 1
 
     def imprimir(self):
         print("-> Fabrica")
@@ -36,19 +41,19 @@ class Fabrica:
 
 # Considerando que o produto tem 10 partes, 5 do 'kit base' e 5 do 'kit variação'
 # Cada número indica a numeração da parte específica.
-produtos = [
+""" produtos = [
     [1, 2, 3, 4, 5, 10, 9, 8, 7, 6],
     [1, 2, 3, 4, 5, 15, 14, 13, 12, 11],
     [1, 2, 3, 4, 5, 10, 20, 19, 18, 17],
     [1, 2, 3, 4, 5, 10, 25, 24, 23, 22],
-    [1, 2, 3, 4, 5, 10, 30, 29, 28, 27]]
+    [1, 2, 3, 4, 5, 10, 30, 29, 28, 27]] """
 
 broker = 'broker.emqx.io'
 port = 1883
 topic_ordem_producao = "viniciusog-sd-ordem-producao"
-topic_pub_linhas_ordem_producao = "viniciusog-sd-linha1-ordem_producao"
 topic_linha_solicita_partes = "viniciusog-sd-linha-solicitacao-partes"
 topic_fabrica_solitica_partes = "viniciusog-sd-fabrica-solicitacao-partes"
+topic_produtos_prontos = "viniciusog-sd-fabrica-produtos-prontos"
 
 client_id = f'python-mqtt-{random.randint(0, 1000)}'
 print("client_id: " + str(client_id) + "\n")
@@ -68,19 +73,21 @@ def connect_mqtt():
     client.connect(broker, port)
     return client
 
-def enviar_nova_ordem_producao_linhas(my_client, msg):
-    result = my_client.publish(topic_pub_linhas_ordem_producao, msg)
+def enviar_nova_ordem_producao_linhas(my_client, n_produto, qtd_produtos):
+    msg = f"Fabrica/{numero_fabrica}/Linha/{n_produto}/{qtd_produtos}"
+    result = my_client.publish(topic_ordem_producao, msg)
     # result: [0, 1]
     status = result[0]
     if status == 0:
-        print(f"Fabrica - Ordem de produção `{msg}` enviada ao tópico `{topic_pub_linhas_ordem_producao}`")
+        print(f"Fabrica - Ordem de produção `{msg}` enviada ao tópico `{topic_ordem_producao}`")
     else:
-        print(f"Fabrica - Falha ao enviar ordem de produção ao tópico {topic_pub_linhas_ordem_producao}")
+        print(f"Fabrica - Falha ao enviar ordem de produção ao tópico {topic_ordem_producao}")
 
 def enviar_qtd_partes(my_client, numero_linha):
     produto_especifico = produtos[numero_linha - 1]
     
     # Quantidade para cada parte das 10 que um produto precisa
+    # ! Aqui, só vamos poder decrementar o valor, se para o produto em específico (de acordo com o número da linha de produção) temos cada uma das partes sendo maior do que 0.
     quantidades_cada_parte = []
     for i in range(10):
         quantidades_cada_parte.append(1)
@@ -118,22 +125,27 @@ def solicitar_pecas_ao_almoxarifado(my_client, partes_para_pedir):
     # result: [0, 1]
     status = result[0]
     if status == 0:
-        print(result.rc)
         print(f"Fabrica - Solicitação peças ao almoxarifado. `{msg}` enviada ao tópico`{topic_fabrica_solitica_partes}`")
     else:
         print(f"Fabrica - Falha solicitação peças ao almoxarifado. `{msg}` enviada ao tópico`{topic_fabrica_solitica_partes}`")
-        print(result.rc)
 
 def subscribe(client: mqtt_client):
     def on_message(client, userdata, msg):
-        if msg.topic == topic_ordem_producao:
-            print("-----------------------")
-            print(f"Fabrica - Recebida ordem de produção `{msg.payload.decode()}` do tópico `{msg.topic}`")
-            fabrica.add_ordem_producao(int(msg.payload.decode()))
-            fabrica.imprimir()
-            # Quando fábrica recebe ordem de produção, deve indicar para as linhas que recebeu.
-            enviar_nova_ordem_producao_linhas(client, str(msg.payload.decode()))
-            print("-----------------------")
+        if msg.topic == topic_ordem_producao and str(msg.payload.decode()).startswith("OrdemProducao"):
+            # OrdemProducao/Fabrica/1/Produto/1/48
+            resultados_msg = str(msg.payload.decode()).split('/')
+            n_fabrica = int(resultados_msg[2])
+            n_produto = int(resultados_msg[4])
+            qtd_produtos = int(resultados_msg[5])
+
+            if n_fabrica == numero_fabrica:
+                print(f"Fabrica - Recebida ordem de produção `{msg.payload.decode()}` do tópico `{msg.topic}`")
+                fabrica.add_ordem_producao(qtd_produtos)
+                fabrica.imprimir()
+                # Quando fábrica recebe ordem de produção, deve indicar para as linhas que recebeu.
+                enviar_nova_ordem_producao_linhas(client, n_produto, qtd_produtos)
+                # ? Aqui poderíamos decrementar a quantidade de ordens realizada na fábrica, só que vamos manter essa informação
+                print("-----------------------")
         elif msg.topic == topic_linha_solicita_partes and not str(msg.payload.decode()).startswith("Fabrica"):
             print("-----------------------")
             print(f"Fabrica - Solicitação de partes recebida `{msg.payload.decode()}` do tópico `{msg.topic}`")
@@ -150,8 +162,14 @@ def subscribe(client: mqtt_client):
             if int(n_fabrica) == numero_fabrica:
                 fabrica.incrementar_estoque_partes(dicionario_partes)
                 fabrica.imprimir()
+        elif msg.topic == topic_produtos_prontos and str(msg.payload.decode()).startswith("Incrementar"):
+            fabrica.incrementar_estoque_produtos_prontos()
+            print("-------Incrementação estoque produtos prontos------")
+            fabrica.imprimir
+            print("---------------------------------------------------")
 
     client.subscribe(topic_ordem_producao)
+    client.subscribe(topic_produtos_prontos)
     client.subscribe(topic_linha_solicita_partes)
     client.subscribe(topic_fabrica_solitica_partes)
     client.on_message = on_message
@@ -165,5 +183,3 @@ def run():
 
 if __name__ == '__main__':
     run()
-
-
