@@ -22,7 +22,9 @@ class Fabrica:
 
     def decrementar_estoque_partes(self, array_qtd, numero_linha):
         for i in range(len(array_qtd)):
-            self.estoque_partes[produtos[numero_linha][i]] -= array_qtd[i]
+            if self.estoque_partes[produtos[numero_linha][i]] >= array_qtd[i]:
+                 self.estoque_partes[produtos[numero_linha][i]] -= array_qtd[i]
+            
     
     def incrementar_estoque_partes(self, dicionario_qtd_parte):
         print(f"Incrementando estoque de partes na fábrica {numero_fabrica}")
@@ -38,15 +40,6 @@ class Fabrica:
         print(f"Qtd Linhas: {self.quantidade_linhas}\nEstoque Produtos Prontos: {self.estoque_produtos_prontos}\nEstoque partes: {self.estoque_partes}\nOrdem de produção:{self.ordem_producao}\n")
 
 # Indica o número das partes que são utilizadas por esse produto
-
-# Considerando que o produto tem 10 partes, 5 do 'kit base' e 5 do 'kit variação'
-# Cada número indica a numeração da parte específica.
-""" produtos = [
-    [1, 2, 3, 4, 5, 10, 9, 8, 7, 6],
-    [1, 2, 3, 4, 5, 15, 14, 13, 12, 11],
-    [1, 2, 3, 4, 5, 10, 20, 19, 18, 17],
-    [1, 2, 3, 4, 5, 10, 25, 24, 23, 22],
-    [1, 2, 3, 4, 5, 10, 30, 29, 28, 27]] """
 
 broker = 'broker.emqx.io'
 port = 1883
@@ -87,7 +80,7 @@ def enviar_qtd_partes(my_client, numero_linha):
     produto_especifico = produtos[numero_linha - 1]
     
     # Quantidade para cada parte das 10 que um produto precisa
-    # ! Aqui, só vamos poder decrementar o valor, se para o produto em específico (de acordo com o número da linha de produção) temos cada uma das partes sendo maior do que 0.
+    # Aqui, só vamos poder decrementar o valor, se para o produto em específico (de acordo com o número da linha de produção) temos cada uma das partes sendo maior do que 0.
     quantidades_cada_parte = []
     for i in range(10):
         quantidades_cada_parte.append(1)
@@ -146,20 +139,33 @@ def subscribe(client: mqtt_client):
                 print(f"Fabrica - Recebida ordem de produção `{msg.payload.decode()}` do tópico `{msg.topic}`")
                 fabrica.add_ordem_producao(qtd_produtos)
                 fabrica.imprimir()
+                
                 # Quando fábrica recebe ordem de produção, deve indicar para as linhas que recebeu.
                 enviar_nova_ordem_producao_linhas(client, n_produto, qtd_produtos)
+<<<<<<< HEAD
                 # ? Aqui poderíamos decrementar a quantidade de ordens realizada na fábrica, só que vamos manter essa informação
                 print("-----------------------")
+=======
+
+>>>>>>> 220b9a30cb97032b70eb194e51ef8a09aa5027f4
         elif msg.topic == topic_linha_solicita_partes and not str(msg.payload.decode()).startswith("Fabrica"):                        
             global executou_linha_solicita_partes
             if executou_linha_solicita_partes == False:
                 executou_linha_solicita_partes = True
+<<<<<<< HEAD
                 print("-----------------------")
+=======
+
+>>>>>>> 220b9a30cb97032b70eb194e51ef8a09aa5027f4
                 print(f"Fabrica - Solicitação de partes recebida `{msg.payload.decode()}` do tópico `{msg.topic}`")
                 # msg = f"Linha/{numero_linha}"
                 numero_da_linha = str(msg.payload.decode()).split("/")[1]
                 enviar_qtd_partes(client, int(numero_da_linha)) # * tem que decrementar a quantidade de partes da fábrica e depois criar uma thread para ficar ouvindo essa quantidade e eventualmente soliticar ao almoxarifado
+<<<<<<< HEAD
                 print("-----------------------")
+=======
+
+>>>>>>> 220b9a30cb97032b70eb194e51ef8a09aa5027f4
                 executou_linha_solicita_partes = False
         elif msg.topic == topic_fabrica_solitica_partes and not str(msg.payload.decode()).startswith("Fabrica"):            
             # "Almoxarifado/Fabrica/{fabrica_numero}/{my_dicionario_partes}"
@@ -171,7 +177,10 @@ def subscribe(client: mqtt_client):
                 global executou_fabrica_solicitacao_partes
                 if executou_fabrica_solicitacao_partes == False:    
                     executou_fabrica_solicitacao_partes = True
+<<<<<<< HEAD
                     print("FABRICA PEDINDO, FABRICA PEDINDO")
+=======
+>>>>>>> 220b9a30cb97032b70eb194e51ef8a09aa5027f4
                     fabrica.incrementar_estoque_partes(dicionario_partes)
                     fabrica.imprimir()
                     executou_fabrica_solicitacao_partes = False
