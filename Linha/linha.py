@@ -120,8 +120,7 @@ def loop_verificar_partes(my_client):
         for i in range(len(linha.array_partes)):
             if linha.array_partes[i] == 0:
                 solicitar_pecas(my_client)
-                break
-           
+                break           
 
 def solicitar_pecas(my_client):
     # Passando o número da linha

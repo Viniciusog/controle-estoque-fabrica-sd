@@ -142,17 +142,42 @@ def subscribe(client: mqtt_client):
                 
                 # Quando fábrica recebe ordem de produção, deve indicar para as linhas que recebeu.
                 enviar_nova_ordem_producao_linhas(client, n_produto, qtd_produtos)
+<<<<<<< HEAD
 
+=======
+<<<<<<< HEAD
+                # ? Aqui poderíamos decrementar a quantidade de ordens realizada na fábrica, só que vamos manter essa informação
+                print("-----------------------")
+=======
+
+>>>>>>> 220b9a30cb97032b70eb194e51ef8a09aa5027f4
+>>>>>>> fc04557ab35e36a2fc44026297fb1b6a44a518ac
         elif msg.topic == topic_linha_solicita_partes and not str(msg.payload.decode()).startswith("Fabrica"):                        
             global executou_linha_solicita_partes
             if executou_linha_solicita_partes == False:
                 executou_linha_solicita_partes = True
+<<<<<<< HEAD
 
+=======
+<<<<<<< HEAD
+                print("-----------------------")
+=======
+
+>>>>>>> 220b9a30cb97032b70eb194e51ef8a09aa5027f4
+>>>>>>> fc04557ab35e36a2fc44026297fb1b6a44a518ac
                 print(f"Fabrica - Solicitação de partes recebida `{msg.payload.decode()}` do tópico `{msg.topic}`")
                 # msg = f"Linha/{numero_linha}"
                 numero_da_linha = str(msg.payload.decode()).split("/")[1]
                 enviar_qtd_partes(client, int(numero_da_linha)) # * tem que decrementar a quantidade de partes da fábrica e depois criar uma thread para ficar ouvindo essa quantidade e eventualmente soliticar ao almoxarifado
+<<<<<<< HEAD
 
+=======
+<<<<<<< HEAD
+                print("-----------------------")
+=======
+
+>>>>>>> 220b9a30cb97032b70eb194e51ef8a09aa5027f4
+>>>>>>> fc04557ab35e36a2fc44026297fb1b6a44a518ac
                 executou_linha_solicita_partes = False
         elif msg.topic == topic_fabrica_solitica_partes and not str(msg.payload.decode()).startswith("Fabrica"):            
             # "Almoxarifado/Fabrica/{fabrica_numero}/{my_dicionario_partes}"
@@ -164,6 +189,13 @@ def subscribe(client: mqtt_client):
                 global executou_fabrica_solicitacao_partes
                 if executou_fabrica_solicitacao_partes == False:    
                     executou_fabrica_solicitacao_partes = True
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+                    print("FABRICA PEDINDO, FABRICA PEDINDO")
+=======
+>>>>>>> 220b9a30cb97032b70eb194e51ef8a09aa5027f4
+>>>>>>> fc04557ab35e36a2fc44026297fb1b6a44a518ac
                     fabrica.incrementar_estoque_partes(dicionario_partes)
                     fabrica.imprimir()
                     executou_fabrica_solicitacao_partes = False
