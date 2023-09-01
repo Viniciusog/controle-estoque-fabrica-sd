@@ -109,7 +109,7 @@ def enviar_qtd_partes(my_client, numero_linha):
 
 def loop_verificar_partes(my_client):
     while True:
-        time.sleep(1)
+        time.sleep(3)
         # Contém o número identificador de cada parte para o qual vamos precisar pedir ao almoxarifado
         partes_para_pedir = []
         for i in range(len(fabrica.estoque_partes)):
@@ -129,8 +129,12 @@ def solicitar_pecas_ao_almoxarifado(my_client, partes_para_pedir):
     else:
         print(f"Fabrica - Falha solicitação peças ao almoxarifado. `{msg}` enviada ao tópico`{topic_fabrica_solitica_partes}`")
 
+executou_fabrica_solicitacao_partes = False
+executou_linha_solicita_partes = False
+
+
 def subscribe(client: mqtt_client):
-    def on_message(client, userdata, msg):
+    def on_message(client, userdata, msg): 
         if msg.topic == topic_ordem_producao and str(msg.payload.decode()).startswith("OrdemProducao"):
             # OrdemProducao/Fabrica/1/Produto/1/48
             resultados_msg = str(msg.payload.decode()).split('/')
@@ -146,22 +150,31 @@ def subscribe(client: mqtt_client):
                 enviar_nova_ordem_producao_linhas(client, n_produto, qtd_produtos)
                 # ? Aqui poderíamos decrementar a quantidade de ordens realizada na fábrica, só que vamos manter essa informação
                 print("-----------------------")
-        elif msg.topic == topic_linha_solicita_partes and not str(msg.payload.decode()).startswith("Fabrica"):
-            print("-----------------------")
-            print(f"Fabrica - Solicitação de partes recebida `{msg.payload.decode()}` do tópico `{msg.topic}`")
-            # msg = f"Linha/{numero_linha}"
-            numero_da_linha = str(msg.payload.decode()).split("/")[1]
-            enviar_qtd_partes(client, int(numero_da_linha)) # * tem que decrementar a quantidade de partes da fábrica e depois criar uma thread para ficar ouvindo essa quantidade e eventualmente soliticar ao almoxarifado
-            print("-----------------------")
-        elif msg.topic == topic_fabrica_solitica_partes and not str(msg.payload.decode()).startswith("Fabrica"):
+        elif msg.topic == topic_linha_solicita_partes and not str(msg.payload.decode()).startswith("Fabrica"):                        
+            global executou_linha_solicita_partes
+            if executou_linha_solicita_partes == False:
+                executou_linha_solicita_partes = True
+                print("-----------------------")
+                print(f"Fabrica - Solicitação de partes recebida `{msg.payload.decode()}` do tópico `{msg.topic}`")
+                # msg = f"Linha/{numero_linha}"
+                numero_da_linha = str(msg.payload.decode()).split("/")[1]
+                enviar_qtd_partes(client, int(numero_da_linha)) # * tem que decrementar a quantidade de partes da fábrica e depois criar uma thread para ficar ouvindo essa quantidade e eventualmente soliticar ao almoxarifado
+                print("-----------------------")
+                executou_linha_solicita_partes = False
+        elif msg.topic == topic_fabrica_solitica_partes and not str(msg.payload.decode()).startswith("Fabrica"):            
             # "Almoxarifado/Fabrica/{fabrica_numero}/{my_dicionario_partes}"
             array_resultados = str(msg.payload.decode()).split('/')
             n_fabrica = array_resultados[2]
             dicionario_partes = ast.literal_eval(array_resultados[3])
 
             if int(n_fabrica) == numero_fabrica:
-                fabrica.incrementar_estoque_partes(dicionario_partes)
-                fabrica.imprimir()
+                global executou_fabrica_solicitacao_partes
+                if executou_fabrica_solicitacao_partes == False:    
+                    executou_fabrica_solicitacao_partes = True
+                    print("FABRICA PEDINDO, FABRICA PEDINDO")
+                    fabrica.incrementar_estoque_partes(dicionario_partes)
+                    fabrica.imprimir()
+                    executou_fabrica_solicitacao_partes = False
         elif msg.topic == topic_produtos_prontos and str(msg.payload.decode()).startswith("Incrementar"):
             fabrica.incrementar_estoque_produtos_prontos()
             print("-------Incrementação estoque produtos prontos------")

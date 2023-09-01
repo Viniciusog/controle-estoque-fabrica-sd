@@ -1,7 +1,7 @@
 import random
 import time
 from paho.mqtt import client as mqtt_client
-import threading
+import threading #""" 066839* """
 import ast
 
 class Almoxarifado:
@@ -63,7 +63,7 @@ def enviar_partes_para_fabrica(my_client, fabrica_numero, array_partes):
     else:
         print(f"Almoxarifado - Enviando partes para fábrica `{msg}`, tópico {topic_fabrica_solitica_partes}")
 
-# ! Criar uma função thread para que quando o estoque de alguma das partes chegue em zero, solicite partes para os fornecedores. Esses por sua vez vão disponibilizar uma quantidade máxima de partes.
+# Criar uma função thread para que quando o estoque de alguma das partes chegue em zero, solicite partes para os fornecedores. Esses por sua vez vão disponibilizar uma quantidade máxima de partes.
 def loop_verificar_estoque_partes(my_client):
     while True:
         time.sleep(1)
