@@ -1,3 +1,9 @@
+docker rm -f container-vog-fornecedor 2>/dev/null || true
+docker rm -f container-vog-almoxarifado 2>/dev/null || true
+docker rm -f container-vog-fabrica 2>/dev/null || true
+docker rm -f container-vog-linha 2>/dev/null || true
+docker rm -f container-vog-ordem 2>/dev/null || true
+
 docker build -t container-vog-fornecedor ./Fornecedor
 docker build -t container-vog-almoxarifado ./Almoxarifado
 docker build -t container-vog-fabrica ./Fabrica
