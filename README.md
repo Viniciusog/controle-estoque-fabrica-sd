@@ -25,3 +25,20 @@ Usar: Docker containeres para cada entidade (Depósito de produtos acabados, Fab
 
 Sugestão: desenhar solução para 1 fornecedor, 1 almoxarifado, 1 fábrica com1 linha e 1 produto com 53 partes e depois escalar para cenário do projeto
 
+## Como executar?
+
+O projeto está utilizando docker para possibilitar a criação dos containers das entidades (fábrica, fornecedor, almoxarifado, etc).
+
+1 - Para criar os containers, se estiver no windows execute o arquivo ```script-windows.bat```. Se estiver no linux, execute o arquivo ```script-linux.sh```
+
+2 - Para rodar os containers siga o passo abaixo (Precisa obrigatóriamente ser executado na ordem especificada): 
+
+  2.1 - ```docker run -it  container-vog-fornecedor``` => Ao executar, vai aparecer a mensagem de conexão do MQTT
+  
+  2.2 - ```docker run -it container-vog-almoxarifado``` => Ao executar, vai aparecer a mensagem de conexão do MQTT
+  
+  2.3 - ```docker run -it container-vog-fabrica``` => Ao executar, vai aparecer mensagem de conexão e quantidade de cada peça no estoque.
+  
+  2.4 - ```docker run -it container-vog-linha``` => Ao executar, vai ser preciso informar no terminal o número dessa linha: Digite 1 para que a linha fique com esse número.
+
+  2.5 - ```docker run -it container-vog-ordem``` => Ao executar, vai ser preciso informar o número da fábrica, o número da linha e a quantidade de produtos para serem fabricados.
