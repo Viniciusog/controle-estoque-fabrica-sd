@@ -25,12 +25,11 @@ def connect_mqtt():
 def enviar_partes_para_almoxarifado(my_client, array_partes):
     my_dicionario_partes = {}
     for i in range(len(array_partes)):
-        my_dicionario_partes[array_partes[i]] = 50
+        my_dicionario_partes[array_partes[i]] = 150
 
     msg = f"Fornecedor/{my_dicionario_partes}"
 
     result = my_client.publish(topic_almoxarifado_solicita_partes, msg)
-    # result: [0, 1]
     status = result[0]
     if status == 0:
         print(f"Fornecedor - Partes enviadas para almoxarifado `{msg}`, tópico `{topic_almoxarifado_solicita_partes}`")

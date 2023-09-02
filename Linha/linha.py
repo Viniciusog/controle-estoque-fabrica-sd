@@ -3,9 +3,12 @@ import time
 from paho.mqtt import client as mqtt_client
 import threading
 import ast
+from colorama import Fore, Style
 
 running = True
 numero_linha = 1
+executou_linha_solicita_partes = False 
+uuid_solicitacao_partes = ""
 
 class Linha:
     def __init__(self, identificador, ordem_producao, array_partes, qtd_produtos_prontos):
@@ -13,13 +16,31 @@ class Linha:
         self.ordem_producao = ordem_producao
         self.array_partes = array_partes
         self.qtd_produtos_prontos = qtd_produtos_prontos
+        self.vermelho = 3 # Se estoque_de_partes <= 3
+        self.amarelo = 5 # Se 3 < estoque_de_partes <= 5
+        # verde vai ser se 5 < estoque_de_partes 
     
     def set_array_partes(self, array_partes):
         self.array_partes = array_partes
 
     def add_array_partes(self, incremento_array_partes):
+        est_vermelho = False
+        est_amarelo = False
+
         for i in range(len(self.array_partes)):
             self.array_partes[i] = self.array_partes[i] + incremento_array_partes[i]
+            
+            if self.array_partes[i] <= self.vermelho:
+                est_vermelho = True
+            elif self.array_partes[i] <= self.amarelo:
+                est_amarelo = True
+        
+        if est_vermelho:
+            print(Fore.RED + f"Linha {numero_linha} - Nível estoque de partes: Vermelho" + Style.RESET_ALL)
+        elif est_amarelo:
+            print(Fore.YELLOW + f"Linha {numero_linha} - Nível estoque de partes: Amarelo" + Style.RESET_ALL)
+        else:
+            print(Fore.GREEN + f"Linha {numero_linha} - Nível estoque de partes: Verde" + Style.RESET_ALL)
     
     def set_ordem_producao(self, ordem_producao):
         self.ordem_producao = ordem_producao
@@ -37,18 +58,35 @@ class Linha:
         self.qtd_produtos_prontos = qtd_produtos_prontos
 
     def decrementar_partes_array(self):
+        est_vermelho = False
+        est_amarelo = False
+
         for i in range(len(self.array_partes)):
             self.array_partes[i] -= 1
 
+            if self.array_partes[i] <= self.vermelho:
+                est_vermelho = True
+            elif self.array_partes[i] <= self.amarelo:
+                est_amarelo = True
+        
+        if est_vermelho:
+            print(Fore.RED + f"Linha {numero_linha} - Nível estoque de partes: Vermelho" + Style.RESET_ALL)
+        elif est_amarelo:
+            print(Fore.YELLOW + f"Linha {numero_linha} - Nível estoque de partes: Amarelo" + Style.RESET_ALL)
+        else:
+            print(Fore.GREEN + f"Linha {numero_linha} - Nível estoque de partes: Verde" + Style.RESET_ALL)
+
+
+
     def imprimir(self):
-        print("\n----LINHA----")
-        print(f"Identificador: {self.identificador}")
-        print(f"Qtd Partes: {self.array_partes}")
-        print(f"Ordem produção: {self.ordem_producao}")
-        print(f"Qtd Produtos Prontos: {self.qtd_produtos_prontos}")
+        print("..............................")
+        print("Linha - dados atuais:")
+        print(f"Linha - Qtd partes: {self.array_partes}")
+        print(f"Linha - Qtd atual de ordens de produção: {self.ordem_producao}")
+        print(f"Linha - Qtd de produtos prontos: {self.qtd_produtos_prontos}")
+        print("..............................")
 
 linha = Linha(0, 0, [0,0,0,0,0,0,0,0,0,0], 0)
-linha.imprimir()
 
 broker = 'broker.emqx.io'
 port = 1883
@@ -67,9 +105,10 @@ print("client_id: " + str(client_id) + "\n")
 def connect_mqtt():
     def on_connect(client, userdata, flags, rc):
         if rc == 0:
-            print("Connected to MQTT Broker!")
+            print("Conectado ao MQTT Broker!")
+            print("Linha - Carregando informações para serem exibidas...")
         else:
-            print("Failed to connect, return code %d\n", rc)
+            print("Falha ao conectar no MQTT Broker. Código de retorno: %d\n", rc)
 
     client = mqtt_client.Client(client_id)
     client.on_connect = on_connect
@@ -78,19 +117,17 @@ def connect_mqtt():
 
 def possui_partes_suficientes():
     for i in range(len(linha.array_partes)):
-        if linha.array_partes[i] == 0:
+        if linha.array_partes[i] <= linha.vermelho:
             return False
     return True
 
-# ! estamos aqui
 def fabricar_produtos(my_client):
     # * depois temos que fazer um while, enquanto peças for zero, pede para a fábrica mais peças
     while True:
         if linha.ordem_producao > 0 and possui_partes_suficientes():
-            print("-------------------------------")
-            print("--------Fazendo produto--------")
+            print("Linha - Fazendo produto.")
             time.sleep(1)
-            print(f"Ordem de produção atual: {linha.ordem_producao}")
+            print(f"Linha - Total atual de ordens de produção existentes: {linha.ordem_producao}")
             print("Linha - Produziu 1 produto")
             linha.decrementar_ordem_producao()
             print("Linha - Decrementou qtd da ordem existente")
@@ -100,7 +137,7 @@ def fabricar_produtos(my_client):
             incrementar_produtos_prontos_fabrica(my_client)
             print("Linha - Incrementou quantidade de produtos feitos")
             linha.imprimir()
-            print("-------------------------------")
+            print("------------------------------")
 
 def incrementar_produtos_prontos_fabrica(my_client):
     msg = f"Incrementar/{numero_linha}"
@@ -108,19 +145,18 @@ def incrementar_produtos_prontos_fabrica(my_client):
     # result: [0, 1]
     status = result[0]
     if status == 0:
-        print(result.rc)
-        print(f"Linha - Incrementar qtd produtos prontos na fábrica. `{msg}` enviada ao tópico`{topic_linha_solicita_partes}`")
+        print(f"Linha - Incrementar qtd produtos prontos na fábrica. `{msg}` enviada ao tópico`{topic_produtos_prontos}`")
     else:
-        print(f"Linha - Falha - Incrementar qtd produtos prontos na fábrica. `{msg}` enviada ao tópico`{topic_linha_solicita_partes}`")
+        print(f"Linha - Falha - Incrementar qtd produtos prontos na fábrica. `{msg}` enviada ao tópico`{topic_produtos_prontos}`")
 
 def loop_verificar_partes(my_client):
     while True:
-        time.sleep(1)
+        time.sleep(5)
         # Se tiver alguma parte sendo 0, então solicita para a fábrica
         for i in range(len(linha.array_partes)):
-            if linha.array_partes[i] == 0:
+            if linha.array_partes[i] <= linha.vermelho:
                 solicitar_pecas(my_client)
-                break           
+                break    
 
 def solicitar_pecas(my_client):
     # Passando o número da linha
@@ -132,8 +168,6 @@ def solicitar_pecas(my_client):
         print(f"Linha - Solicitação peças. `{msg}` enviada ao tópico`{topic_linha_solicita_partes}`")
     else:
         print(f"Linha - Falha solicitação peças. `{msg}` enviada ao tópico`{topic_linha_solicita_partes}`")
-
-executou_linha_solicita_partes = False
 
 def subscribe(client: mqtt_client):
     def on_message(client, userdata, msg):
@@ -150,21 +184,21 @@ def subscribe(client: mqtt_client):
                 linha.add_ordem_producao(qtd_produtos)
                 linha.imprimir()
 
-        # Se partes vieram da fábrica
         elif msg.topic == topic_linha_solicita_partes and not str(msg.payload.decode()).startswith("Linha"):
             # Fabrica/Linha/{numero_linha}/[1,2,3,4,5,10,9,8,7,6]"
             valores_msg = str(msg.payload.decode()).split('/')
             n_linha = valores_msg[2]
-            array_quantidade_partes = ast.literal_eval(valores_msg[3]) 
+            array_quantidade_partes = ast.literal_eval(valores_msg[3])
+            uuid_recebido_solicitacao_partes = valores_msg[4]
+            
+            global uuid_solicitacao_partes
 
-            if int(n_linha) == numero_linha:
-                global executou_linha_solicita_partes
-                if executou_linha_solicita_partes == False:     
-                    executou_linha_solicita_partes = True           
-                    print(f"Linha - Partes recebidas `{msg.payload.decode()}` do tópico `{msg.topic}`")
-                    linha.add_array_partes(array_quantidade_partes)
-                    linha.imprimir()
-                    executou_linha_solicita_partes = False
+            # Se o uuid recebido é diferente do anterior
+            if int(n_linha) == numero_linha and not uuid_recebido_solicitacao_partes == uuid_solicitacao_partes:
+                print(f"Linha - Partes recebidas `{msg.payload.decode()}` do tópico `{msg.topic}`")
+                linha.add_array_partes(array_quantidade_partes)
+                linha.imprimir()
+                uuid_solicitacao_partes = uuid_recebido_solicitacao_partes
 
     client.subscribe(topic_ordem_producao)
     client.subscribe(topic_linha_solicita_partes)
