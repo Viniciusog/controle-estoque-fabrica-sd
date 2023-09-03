@@ -41,7 +41,7 @@ O projeto está utilizando docker para possibilitar a criação dos containers d
 1. Para criar os containers, se estiver no windows execute o arquivo ```script-windows.bat```. Se estiver no linux, execute o arquivo ```script-linux.sh```
 2. Para rodar os containers siga o passo abaixo (Precisa obrigatóriamente ser executado na ordem especificada): <br>
   **Rode cada um dos containers em um terminal diferente para que seja possível ver as informações corretamente.** <br><br>
-  **OBS: Antes de executar os comandos abaixo, se existirem containers da nossa aplicação que ainda estão rodando, pare a execução deles para não gerar interferência nos resultados. (Você pode executar os scripts de remoção ```script-remover-windows.bat``` ou ```script-remover-linux.sh``` para fazer isso)**   
+  **OBS: Antes de executar os comandos abaixo, se existirem containers da nossa aplicação que ainda estão rodando, pare a execução deles para não gerar interferência nos resultados. (Você pode executar os scripts de remoção ```script-remover-windows.bat``` ou ```script-remover-linux.sh``` para fazer isso)** <br><br>
   2.1. ```docker run -it  container-vog-fornecedor``` => Ao executar, vai aparecer a mensagem de conexão do MQTT <br>
   2.2. ```docker run -it container-vog-almoxarifado``` => Ao executar, vai aparecer a mensagem de conexão do MQTT <br>
   2.3. ```docker run -it container-vog-fabrica``` => Ao executar, vai aparecer mensagem de conexão e quantidade de cada peça no estoque. <br>
