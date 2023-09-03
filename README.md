@@ -1,8 +1,7 @@
 # controle-estoque-fabrica-sd
 Projeto para controlar o estoque de uma fábrica, gerenciando os produtos feitos e as partes necessárias para a fabricação
 
-Vinícius de Oliveira Guimarães
-RA: 802431
+Vinícius de Oliveira Guimarães, 802431
 
 ## Entidades:
 - Fornecedor
