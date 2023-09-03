@@ -25,13 +25,23 @@ Usar: Docker containeres para cada entidade (Depósito de produtos acabados, Fab
 
 Sugestão: desenhar solução para 1 fornecedor, 1 almoxarifado, 1 fábrica com1 linha e 1 produto com 53 partes e depois escalar para cenário do projeto
 
+## Funcionamento do controle de estoque:
+- Suporte para 3 tipos de STATUS do estoque: VERMELHO, AMARELO, VERDE. <br>
+- Fornecedor envia 150 partes para almoxarifado quando requisitado.
+- Almoxarifado envia 50 partes para fábrica quando requisitado.
+- Níveis de estoque do almoxarifado: VERMELHO: estoque <= 50, AMARELO: estoque <= 100, VERDE: estoque > 100
+- Fábrica envia 6 partes para linha quando requisitada
+- Níveis de estoque da fábrica: VERMELHO: estoque <= 30, AMARELO: estoque <= 40, VERDE: estoque > 40
+- Níveis de estoque da linha: VERMELHO: estoque <= 3, AMARELO: estoque <= 5, VERDE: estoque > 100
+
 ## Como executar?
 
 O projeto está utilizando docker para possibilitar a criação dos containers das entidades (fábrica, fornecedor, almoxarifado, etc).
 
 1. Para criar os containers, se estiver no windows execute o arquivo ```script-windows.bat```. Se estiver no linux, execute o arquivo ```script-linux.sh```
 2. Para rodar os containers siga o passo abaixo (Precisa obrigatóriamente ser executado na ordem especificada): <br>
-  **Rode cada um dos containers em um terminal diferente para que seja possível ver as informações corretamente.** <br>
+  **Rode cada um dos containers em um terminal diferente para que seja possível ver as informações corretamente.** <br><br>
+  **OBS: Antes de executar os comandos abaixo, se existirem containers da nossa aplicação que ainda estão rodando, pare a execução deles para não gerar interferência nos resultados. (Você pode executar os scripts de remoção ```script-remover-windows.bat``` ou ```script-remover-linux.sh``` para fazer isso)**   
   2.1. ```docker run -it  container-vog-fornecedor``` => Ao executar, vai aparecer a mensagem de conexão do MQTT <br>
   2.2. ```docker run -it container-vog-almoxarifado``` => Ao executar, vai aparecer a mensagem de conexão do MQTT <br>
   2.3. ```docker run -it container-vog-fabrica``` => Ao executar, vai aparecer mensagem de conexão e quantidade de cada peça no estoque. <br>
