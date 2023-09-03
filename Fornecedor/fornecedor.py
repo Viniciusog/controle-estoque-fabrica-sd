@@ -3,6 +3,7 @@ import time
 from paho.mqtt import client as mqtt_client
 import threading
 import ast
+import uuid
 
 topic_almoxarifado_solicita_partes = "viniciusog-sd-almoxarifado-solicitacao-partes"
 
@@ -27,7 +28,9 @@ def enviar_partes_para_almoxarifado(my_client, array_partes):
     for i in range(len(array_partes)):
         my_dicionario_partes[array_partes[i]] = 150
 
-    msg = f"Fornecedor/{my_dicionario_partes}"
+    uuid_identificador = uuid.uuid4()
+
+    msg = f"Fornecedor/{my_dicionario_partes}/{str(uuid_identificador)}"
 
     result = my_client.publish(topic_almoxarifado_solicita_partes, msg)
     status = result[0]

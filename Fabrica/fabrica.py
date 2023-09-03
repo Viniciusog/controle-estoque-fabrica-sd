@@ -196,7 +196,7 @@ def subscribe(client: mqtt_client):
                     fabrica.incrementar_estoque_partes(dicionario_partes)
                     fabrica.imprimir()
                     executou_fabrica_solicitacao_partes = False
-        elif msg.topic == topic_produtos_prontos and str(msg.payload.decode()).startswith("Incrementar"):
+        if msg.topic == topic_produtos_prontos and str(msg.payload.decode()).startswith("Incrementar"):
             fabrica.incrementar_estoque_produtos_prontos()
             fabrica.imprimir
 

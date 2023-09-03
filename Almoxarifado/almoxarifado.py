@@ -5,6 +5,8 @@ import threading #""" 066839* """
 import ast
 from colorama import Fore, Style
 
+uuid_solicitacao_partes = ""
+
 class Almoxarifado:
     # dependendo do tamanho do lote, iremos alocar + ou - linhas de producao
     def __init__(self, estoque_partes):
@@ -140,12 +142,15 @@ def subscribe(client: mqtt_client):
             almoxarifado.imprimir()
         # Quando estiver recebendo as peças do fornecedor
         if msg.topic == topic_almoxarifado_solicita_partes and not str(msg.payload.decode()).startswith("Almoxarifado"):
-            dicionario_partes = ast.literal_eval(str(msg.payload.decode()).split("/")[1])
-            # print("dicionario partes - almoxarifado")
-            # print(dicionario_partes)
-
-            almoxarifado.incrementar_estoque_partes(dicionario_partes)
-            almoxarifado.imprimir()
+            dados_array = str(msg.payload.decode()).split("/")
+            dicionario_partes = ast.literal_eval(dados_array[1])
+            uuid_recebido = dados_array[2]
+            
+            global uuid_solicitacao_partes
+            if not uuid_solicitacao_partes == uuid_recebido:
+                almoxarifado.incrementar_estoque_partes(dicionario_partes)
+                almoxarifado.imprimir()
+                uuid_solicitacao_partes = uuid_recebido
 
     client.subscribe(topic_fabrica_solitica_partes)
     client.subscribe(topic_almoxarifado_solicita_partes)
